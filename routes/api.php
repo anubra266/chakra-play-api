@@ -1,19 +1,22 @@
 <?php
 
-use Illuminate\Http\Request;
+use App\Models\Playground;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Route;
+use App\Http\Requests\PlaygroundRequest;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| is assigned the "api" middleware group. Enjoy building your API!
-|
-*/
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+Route::get('/playgrounds/{playground:uuid}', fn (Playground $playground) => $playground);
+
+Route::post('/playgrounds', function (PlaygroundRequest $request) {
+    $request->validated();
+
+    $hash = md5(implode('.', $request->only(['code'])));
+
+    return Playground::firstOrCreate(
+        ['hash' => $hash],
+        array_merge($request->only(['code']), [
+            'uuid' => Str::random(10),
+        ])
+    );
+})->middleware(['throttle:api']);
